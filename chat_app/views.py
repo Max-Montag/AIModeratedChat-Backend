@@ -1,8 +1,7 @@
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.generics import ListCreateAPIView
-from .models import ChatRoom, Message
-from .serializers import ChatRoomSerializer, MessageSerializer
+from rest_framework import generics
+from django.contrib.auth.models import User
+from .models import Message
+from .serializers import MessageSerializer
 
 
 class MessageListCreateView(generics.ListCreateAPIView):
@@ -11,13 +10,10 @@ class MessageListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         return Message.objects.filter(chatroom_id=self.kwargs['chatroom_id'])
 
-
-class ChatRoomCreateView(ListCreateAPIView):
-    queryset = ChatRoom.objects.all()
-    serializer_class = ChatRoomSerializer
-
-    def post(self, request, *args, **kwargs):
-        chatroom = ChatRoom.objects.create(
-            chatroom_id=self.kwargs['chatRoomId'])
-        serializer = self.get_serializer(chatroom)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    def perform_create(self, serializer):
+        if self.request.user.is_authenticated:
+            author = self.request.user
+        else:
+            # TODO - remove this default author
+            author, _ = User.objects.get_or_create(username='default')
+        serializer.save(author=author)
