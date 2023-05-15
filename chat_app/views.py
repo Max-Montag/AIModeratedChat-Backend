@@ -17,6 +17,7 @@ class ChatRoomCreateView(ListCreateAPIView):
     serializer_class = ChatRoomSerializer
 
     def post(self, request, *args, **kwargs):
-        chatroom = ChatRoom.objects.create()
+        chatroom = ChatRoom.objects.create(
+            chatroom_id=self.kwargs['chatRoomId'])
         serializer = self.get_serializer(chatroom)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
