@@ -4,8 +4,10 @@ from django.utils import timezone
 
 
 class ChatRoom(models.Model):
-    name = models.CharField(max_length=100, default='testRoom')
-    users = models.ManyToManyField(User, related_name='chatrooms')
+    participant1 = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="participant1")
+    participant2 = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="participant2")
 
 
 class Message(models.Model):

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ChatRoom, Message, Friendship
+from .models import ChatRoom, Message, Friendship, User
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -10,15 +10,24 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ['id', 'text', 'chatroom', 'author', 'timestamp']
 
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username']
+
+
 class ChatRoomSerializer(serializers.ModelSerializer):
+    participant1 = UserSerializer()
+    participant2 = UserSerializer()
+
     class Meta:
         model = ChatRoom
-        fields = ['id', 'name']
+        fields = ['id', 'participant1', 'participant2']
 
 
 class FriendshipSerializer(serializers.ModelSerializer):
-    user1 = serializers.StringRelatedField()
-    user2 = serializers.StringRelatedField()
+    user1 = UserSerializer()
+    user2 = UserSerializer()
 
     class Meta:
         model = Friendship

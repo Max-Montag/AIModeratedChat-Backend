@@ -8,7 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .models import ChatRoom, Message, Friendship
-from .serializers import ChatRoomSerializer, FriendshipSerializer, MessageSerializer
+from django.db.models import Q
+from .serializers import ChatRoomSerializer, FriendshipSerializer, MessageSerializer, UserSerializer
 
 
 class MessageListCreateView(generics.ListCreateAPIView):
@@ -44,7 +45,8 @@ class UserChatRoomListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return self.request.user.chatrooms.all()
+        user = self.request.user
+        return ChatRoom.objects.filter(Q(participant1=user) | Q(participant2=user))
 
 
 class ChatRoomCreateView(generics.CreateAPIView):
@@ -52,19 +54,17 @@ class ChatRoomCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        adjectives_path = os.path.join(
-            settings.BASE_DIR, "wordlist", "adjectives.txt")
-        nouns_path = os.path.join(settings.BASE_DIR, "wordlist", "nouns.txt")
+        invited_user_id = request.data.get('user_id')
+        if not invited_user_id:
+            return Response({"detail": "Missing user_id field."}, status=status.HTTP_400_BAD_REQUEST)
 
-        with open(adjectives_path, "r") as file:
-            adjectives = file.read().splitlines()
-        with open(nouns_path, "r") as file:
-            nouns = file.read().splitlines()
+        try:
+            invited_user = User.objects.get(id=invited_user_id)
+        except User.DoesNotExist:
+            return Response({"detail": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-        name = f"{random.choice(adjectives)} {random.choice(nouns)}"
-        chatroom = ChatRoom.objects.create(name=name)
-        chatroom.users.add(request.user)
-        chatroom.save()
+        chatroom = ChatRoom.objects.create(
+            participant1=request.user, participant2=invited_user)
 
         serializer = self.get_serializer(chatroom)
 
@@ -109,3 +109,13 @@ class AddFriendView(APIView):
                 {"error": "User not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+
+class UserSearchView(generics.ListAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        search = self.request.query_params.get('search', '')
+        queryset = User.objects.filter(Q(username__icontains=search))
+        return queryset
