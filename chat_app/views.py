@@ -7,8 +7,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from .models import ChatRoom, Message
-from .serializers import ChatRoomSerializer, MessageSerializer
+from .models import ChatRoom, Message, Friendship
+from .serializers import ChatRoomSerializer, FriendshipSerializer, MessageSerializer
 
 
 class MessageListCreateView(generics.ListCreateAPIView):
@@ -19,11 +19,7 @@ class MessageListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-        if self.request.user.is_authenticated:
-            author = self.request.user
-        else:
-            # TODO - remove this default author
-            author, _ = User.objects.get_or_create(username='default')
+        author = self.request.user
         serializer.save(author=author)
 
 
@@ -74,3 +70,42 @@ class ChatRoomCreateView(generics.CreateAPIView):
 
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class UserFriendsListView(generics.ListAPIView):
+    serializer_class = FriendshipSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Friendship.objects.filter(user1=user) | Friendship.objects.filter(user2=user)
+
+
+class AddFriendView(APIView):
+    def post(self, request):
+        username = request.data.get("username")
+
+        if not username:
+            return Response(
+                {"error": "Username required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            friend = User.objects.get(username__iexact=username)
+
+            if friend == request.user:
+                return Response(
+                    {"error": "You cannot add yourself as a friend"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            Friendship.objects.create(user1=request.user, user2=friend)
+
+            return Response({"message": "Friend added"}, status=status.HTTP_201_CREATED)
+
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ChatRoomCreateView, MessageListCreateView, RegisterView, UserChatRoomListView
+from .views import AddFriendView, ChatRoomCreateView, MessageListCreateView, RegisterView, UserChatRoomListView, UserFriendsListView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -13,4 +13,6 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('chatrooms/', UserChatRoomListView.as_view(), name='user_chatrooms'),
     path('chatrooms/create/', ChatRoomCreateView.as_view(), name='chatroom_create'),
+    path('myfriends/', UserFriendsListView.as_view(), name='user_friends'),
+    path('addFriend/', AddFriendView.as_view(), name='add_friend'),
 ]
