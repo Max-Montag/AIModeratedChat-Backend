@@ -1,0 +1,48 @@
+# Python
+*.py[cod]
+*.pyo
+*.pyc
+*.pyd
+__pycache__
+*.egg-info/
+*.egg
+*.pyc
+*.pyo
+*.pyd
+*~
+
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__
+db.sqlite3
+media
+
+# Development
+.env
+.venv
+env/
+venv/
+ENV/
+
+# OS generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDES
+.vscode/
+
+# Databases
+*.sqlite
+
+# If you are using PostgreSQL
+*.psql
+
+# If you are using MySQL
+*.mysql
