@@ -63,5 +63,6 @@ def create_bot_message(chatroom_id):
             bot_message = Message.objects.create(
                 chatroom=chatroom,
                 text=bot_message_text,
-                author=User.objects.get(username='Therapist')
+                author=User.objects.get(username='Therapist'),
+                processed_by_ai=True
             )
