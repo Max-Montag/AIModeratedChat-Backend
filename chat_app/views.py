@@ -19,7 +19,7 @@ class MessageListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         original_message = serializer.save(author=self.request.user)
 
-        create_bot_message(original_message)
+        create_bot_message(self.kwargs['chatroom_id'])
 
 
 class RegisterView(APIView):

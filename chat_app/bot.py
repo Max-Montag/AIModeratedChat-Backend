@@ -27,27 +27,41 @@ def get_ai_response(prompt):
 
 def create_bot_message(chatroom_id):
     chatroom = ChatRoom.objects.get(id=chatroom_id)
-    last_messages_user1 = Message.objects.filter(
-        chatroom=chatroom, author=chatroom.participant1, processed_by_ai=False).order_by('-timestamp')
-    last_messages_user2 = Message.objects.filter(
-        chatroom=chatroom, author=chatroom.participant2, processed_by_ai=False).order_by('-timestamp')
+    all_messages = Message.objects.filter(
+        chatroom=chatroom, processed_by_ai=False).order_by('timestamp')
 
-    text_user1 = ' '.join([msg.text for msg in last_messages_user1])
-    text_user2 = ' '.join([msg.text for msg in last_messages_user2])
+    if not all_messages.filter(author=chatroom.participant1).exists() or not all_messages.filter(author=chatroom.participant2).exists():
+        return
 
-    prompt = f"{chatroom.participant1.username}: {text_user1} {chatroom.participant2.username}: {text_user2}"
+    combined_phrases = []
+    previous_author = None
+    current_phrase = ""
 
-    bot_message_text = get_ai_response(prompt)
+    for message in all_messages:
+        if message.author == previous_author:
+            current_phrase += " " + message.text
+        else:
+            if current_phrase:
+                combined_phrases.append(current_phrase)
+            current_phrase = f"{message.author.username}: {message.text}"
 
-    bot_message_text_stripped = bot_message_text.strip().strip('.')
+        previous_author = message.author
+        message.processed_by_ai = True
+        message.save()
 
-    # Only create a bot message if the response is not undefined (i.e. intervention is not required)
-    if bot_message_text_stripped.lower().find("undefined") == -1:
-        bot_message = Message.objects.create(
-            chatroom=chatroom,
-            text=bot_message_text,
-            author=User.objects.get(id=5)
-        )
+    if current_phrase:
+        combined_phrases.append(current_phrase)
 
-    last_messages_user1.update(processed_by_ai=True)
-    last_messages_user2.update(processed_by_ai=True)
+    if combined_phrases:
+        prompt = ' '.join(combined_phrases)
+
+        bot_message_text = get_ai_response(prompt)
+        bot_message_text_stripped = bot_message_text.strip().strip('.')
+
+        # Only create a bot message if the response is not undefined (i.e. intervention is not required)
+        if bot_message_text_stripped.lower().find("undefined") == -1:
+            bot_message = Message.objects.create(
+                chatroom=chatroom,
+                text=bot_message_text,
+                author=User.objects.get(username='Therapist')
+            )
