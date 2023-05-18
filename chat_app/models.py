@@ -16,6 +16,7 @@ class Message(models.Model):
         User, on_delete=models.CASCADE, null=True, blank=True)
     text = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
+    processed_by_ai = models.BooleanField(default=False)
 
 
 class Friendship(models.Model):
