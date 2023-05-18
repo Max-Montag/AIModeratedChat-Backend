@@ -1,6 +1,3 @@
-import os
-import random
-from django.conf import settings
 from rest_framework import generics
 from django.contrib.auth.models import User
 from rest_framework import status
@@ -10,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import ChatRoom, Message, Friendship
 from django.db.models import Q
 from .serializers import ChatRoomSerializer, FriendshipSerializer, MessageSerializer, UserSerializer
+from .bot import create_bot_message
 
 
 class MessageListCreateView(generics.ListCreateAPIView):
@@ -19,9 +17,9 @@ class MessageListCreateView(generics.ListCreateAPIView):
         return Message.objects.filter(chatroom_id=self.kwargs['chatroom_id'])
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-        author = self.request.user
-        serializer.save(author=author)
+        original_message = serializer.save(author=self.request.user)
+
+        create_bot_message(original_message)
 
 
 class RegisterView(APIView):
@@ -63,13 +61,22 @@ class ChatRoomCreateView(generics.CreateAPIView):
         except User.DoesNotExist:
             return Response({"detail": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-        chatroom = ChatRoom.objects.create(
-            participant1=request.user, participant2=invited_user)
+        try:
+            chatroom = ChatRoom.objects.get(
+                Q(participant1=request.user, participant2=invited_user) |
+                Q(participant1=invited_user, participant2=request.user)
+            )
+            created = False
+        except ChatRoom.DoesNotExist:
+            chatroom = ChatRoom.objects.create(
+                participant1=request.user, participant2=invited_user
+            )
+            created = True
 
         serializer = self.get_serializer(chatroom)
 
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK, headers=headers)
 
 
 class UserFriendsListView(generics.ListAPIView):

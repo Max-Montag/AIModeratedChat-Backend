@@ -46,3 +46,6 @@ Thumbs.db
 
 # If you are using MySQL
 *.mysql
+
+# training folder
+training/
