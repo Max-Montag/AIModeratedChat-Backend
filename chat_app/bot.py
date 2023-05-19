@@ -25,8 +25,7 @@ def get_ai_response(prompt):
     return response['choices'][0]['message']['content']
 
 
-def create_bot_message(chatroom_id):
-    chatroom = ChatRoom.objects.get(id=chatroom_id)
+def create_bot_message(chatroom):
     all_messages = Message.objects.filter(
         chatroom=chatroom, processed_by_ai=False).order_by('timestamp')
 

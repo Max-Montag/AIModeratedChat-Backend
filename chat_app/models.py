@@ -3,6 +3,12 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    partner = models.OneToOneField(
+        User, related_name='partner_of', null=True, blank=True, on_delete=models.SET_NULL)
+
+
 class ChatRoom(models.Model):
     participant1 = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="participant1")
@@ -17,14 +23,3 @@ class Message(models.Model):
     text = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
     processed_by_ai = models.BooleanField(default=False)
-
-
-class Friendship(models.Model):
-    user1 = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="user1")
-    user2 = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="user2")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = (('user1', 'user2'),)
