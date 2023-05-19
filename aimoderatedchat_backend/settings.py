@@ -59,6 +59,7 @@ REST_FRAMEWORK = {
     ],
 }
 
+
 ROOT_URLCONF = 'aimoderatedchat_backend.urls'
 
 TEMPLATES = [

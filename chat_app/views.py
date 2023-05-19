@@ -17,7 +17,7 @@ class MessageListCreateView(generics.ListCreateAPIView):
         return Message.objects.filter(chatroom_id=self.kwargs['chatroom_id'])
 
     def perform_create(self, serializer):
-        original_message = serializer.save(author=self.request.user)
+        serializer.save(author=self.request.user)
 
         create_bot_message(self.kwargs['chatroom_id'])
 
