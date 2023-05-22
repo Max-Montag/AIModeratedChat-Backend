@@ -8,6 +8,8 @@ load_dotenv()
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
+MAX_PROCESS_COUNT = 4
+
 
 def get_ai_response(prompt):
     print("PROMPT:")
@@ -27,7 +29,7 @@ def get_ai_response(prompt):
 
 def create_bot_message(chatroom):
     all_messages = Message.objects.filter(
-        chatroom=chatroom, processed_by_ai=False).order_by('timestamp')
+        chatroom=chatroom, processed_by_ai__lt=MAX_PROCESS_COUNT).order_by('timestamp')
 
     if not all_messages.filter(author=chatroom.participant1).exists() or not all_messages.filter(author=chatroom.participant2).exists():
         return
@@ -45,7 +47,7 @@ def create_bot_message(chatroom):
             current_phrase = f"{message.author.username}: {message.text}"
 
         previous_author = message.author
-        message.processed_by_ai = True
+        message.processed_by_ai += 1
         message.save()
 
     if current_phrase:
@@ -59,9 +61,11 @@ def create_bot_message(chatroom):
 
         # Only create a bot message if the response is not undefined (i.e. intervention is not required)
         if bot_message_text_stripped.lower().find("undefined") == -1:
+            bot_message_text = bot_message_text.replace(
+                "Therapist:", "").strip()
             bot_message = Message.objects.create(
                 chatroom=chatroom,
                 text=bot_message_text,
                 author=User.objects.get(username='Therapist'),
-                processed_by_ai=True
+                processed_by_ai=1
             )
