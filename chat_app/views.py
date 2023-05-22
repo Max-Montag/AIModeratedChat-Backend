@@ -7,7 +7,20 @@ from rest_framework.permissions import IsAuthenticated
 from .models import ChatRoom, Message, UserProfile
 from django.db.models import Q
 from .serializers import UserSerializer, MessageSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.response import Response
+from django.db import transaction
 from .bot import create_bot_message
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        response.set_cookie('access_token', response.data['access'],
+                            httponly=False, samesite='Lax')
+        response.set_cookie('refresh_token', response.data['refresh'],
+                            httponly=False, samesite='Lax')
+        return response
 
 
 class RegisterView(APIView):
@@ -31,6 +44,7 @@ class RegisterView(APIView):
 class ConnectPartnerView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request, user_id):
         print("TRYING TO CONNECT PARTNER"+user_id)
         try:
@@ -42,7 +56,7 @@ class ConnectPartnerView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            if hasattr(request.user.userprofile, 'partner') or hasattr(partner.userprofile, 'partner'):
+            if (hasattr(request.user.userprofile, 'partner') and request.user.userprofile.partner is not None) or (hasattr(partner.userprofile, 'partner') and partner.userprofile.partner is not None):
                 return Response(
                     {"error": "User or partner already has a partner"},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -51,7 +65,9 @@ class ConnectPartnerView(APIView):
             request.user.userprofile.partner = partner
             request.user.userprofile.save()
 
-            # Create a ChatRoom for the user and partner
+            partner.userprofile.partner = request.user
+            partner.userprofile.save()
+
             ChatRoom.objects.create(
                 participant1=request.user, participant2=partner)
 
@@ -113,8 +129,8 @@ class MessageListCreateView(generics.ListCreateAPIView):
         partner = user.userprofile.partner
 
         if partner is None:
-            return
-
+            raise Response({"error": "No partner connected"},
+                           status=status.HTTP_404_NOT_FOUND)
         try:
             chatroom = ChatRoom.objects.get(
                 Q(participant1=user, participant2=partner) |

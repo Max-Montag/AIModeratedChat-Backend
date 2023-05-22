@@ -20,7 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     chatroom = serializers.PrimaryKeyRelatedField(
-        queryset=ChatRoom.objects.all())
+        queryset=ChatRoom.objects.all(), required=False)
     author = serializers.StringRelatedField()
 
     class Meta:
