@@ -88,19 +88,16 @@ class CurrentUserView(APIView):
         return Response(serializer.data)
 
 
-class PartnerDetailView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+class StatsView(APIView):
+    def get(self, request, *args, **kwargs):
+        therapist_messages = Message.objects.filter(
+            author=User.objects.get(username='Therapist')).count()
+        total_messages = Message.objects.count()
 
-    def get_object(self):
-        user = self.request.user
-        partner = user.userprofile.partner
-
-        if partner is None:
-            raise Response({"error": "No partner connected"},
-                           status=status.HTTP_404_NOT_FOUND)
-
-        return partner
+        return Response({
+            'total_messages': total_messages,
+            'therapist_messages': therapist_messages,
+        })
 
 
 class MessageListCreateView(generics.ListCreateAPIView):
