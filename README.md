@@ -28,7 +28,7 @@ The `GPT_PROMPT` is the instruction given to the AI therapist. For example, it c
 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/AIModeratedChat-backend.git
+git clone https://github.com/Max-Montag/AIModeratedChat-backend.git
 ```
 
 2. Install Python packages
